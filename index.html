@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>天堂之裔・網頁攻城</title>
+<style>
+  body{margin:0;background:#111;color:#fff;font-family:sans-serif;overflow:hidden;display:flex;justify-content:center;align-items:center;height:100vh;}
+  canvas{background:#222;border:2px solid #555;}
+  #ui{position:absolute;top:10px;left:10px;font-size:18px;}
+  #info{position:absolute;top:10px;right:10px;font-size:14px;text-align:right;}
+</style>
+</head>
+<body>
+<canvas id="cv" width="900" height="500"></canvas>
+<div id="ui">金幣：<span id="gold">0</span></div>
+<div id="info">靠近城門 ➜ 滑鼠左鍵攻擊<br>R = 重開</div>
+<script>
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+const W=cv.width,H=cv.height;
+let gold=0,gateHP=200,victory=false;
+const player={x:100,y:H/2,w:30,h:30,speed:4,color:'#4af'};
+const gate={x:W-140,y:H/2-60,w:120,h:120,color:'#777'};
+
+function drawRect(r){ctx.fillStyle=r.color;ctx.fillRect(r.x,r.y,r.w,r.h);}
+function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
+function rand(min,max){return Math.floor(Math.random()*(max-min+1))+min;}
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  // 玩家
+  drawRect(player);
+  // 城門
+  drawRect(gate);
+  // 血條
+  ctx.fillStyle='#000';ctx.fillRect(gate.x-10,gate.y-20,140,12);
+  ctx.fillStyle=gateHP>50?'#0d0':'#d00';
+  ctx.fillRect(gate.x-10,gate.y-20,140*(gateHP/200),12);
+  // Victory 畫面
+  if(victory){
+    ctx.fillStyle='rgba(0,0,0,0.7)';
+    ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#ff0';
+    ctx.font='48px sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText('🏆 VICTORY 🏆',W/2,H/2-30);
+    ctx.font='24px sans-serif';
+    ctx.fillText(`獲得金幣：${gold} 枚`,W/2,H/2+20);
+    ctx.fillText('按 R 重開',W/2,H/2+60);
+  }
+}
+
+function update(){
+  if(victory)return;
+  // 鍵盤移動
+  if(keys['KeyW']||keys['ArrowUp'])player.y-=player.speed;
+  if(keys['KeyS']||keys['ArrowDown'])player.y+=player.speed;
+  if(keys['KeyA']||keys['ArrowLeft'])player.x-=player.speed;
+  if(keys['KeyD']||keys['ArrowRight'])player.x+=player.speed;
+  player.x=Math.max(0,Math.min(W-player.w,player.x));
+  player.y=Math.max(0,Math.min(H-player.h,player.y));
+  draw();
+}
+const keys={};
+window.addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='KeyR')location.reload();});
+window.addEventListener('keyup',e=>{keys[e.code]=false;});
+window.addEventListener('mousedown',e=>{
+  if(victory)return;
+  const rect=cv.getBoundingClientRect();
+  const mx=e.clientX-rect.left,my=e.clientY-rect.top;
+  // 點擊判定：必須靠近城門（距離<80）且點在城門區域
+  if(dist({x:player.x+player.w/2,y:player.y+player.h/2},gate)<80 
+     && mx>gate.x && mx<gate.x+gate.w && my>gate.y && my<gate.y+gate.h){
+    gateHP-=20;
+    gold+=rand(5,15);
+    document.getElementById('gold').textContent=gold;
+    if(gateHP<=0){gateHP=0;victory=true;}
+  }
+});
+setInterval(update,16);
+</script>
+</body>
+</html>
